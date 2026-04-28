@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAudioRecorder } from '@siteed/audio-studio'
-import { createAudioPlayer } from 'expo-audio'
+import { createAudioPlayer, requestRecordingPermissionsAsync, getRecordingPermissionsAsync } from 'expo-audio'
 import type { AudioPlayer } from 'expo-audio'
 import * as FileSystem from 'expo-file-system/legacy'
 import { initWhisper, type WhisperContext } from 'whisper.rn'
@@ -57,6 +57,16 @@ export function useSpeechToText(): UseSpeechToTextReturn {
     if (recordingState !== 'idle') return
 
     try {
+      const current = await getRecordingPermissionsAsync()
+      if (!current.granted) {
+        const { granted } = await requestRecordingPermissionsAsync()
+        if (!granted) {
+          console.error('Microphone permission denied')
+          setTranscript('[Microphone permission denied]')
+          return
+        }
+      }
+
       await recorder.startRecording({
         sampleRate: 16000,
         channels: 1,
