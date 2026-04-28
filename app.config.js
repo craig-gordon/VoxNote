@@ -32,6 +32,11 @@ export default {
       predictiveBackGestureEnabled: false,
       permissions: ['android.permission.RECORD_AUDIO'],
     },
+    plugins: [
+      'expo-audio',
+      '@siteed/audio-studio',
+      ['expo-asset', { assets: ['./assets/ggml-small.en.bin'] }],
+    ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
       neonDatabaseUrl: process.env.NEON_DATABASE_CONNECTION_STRING,
