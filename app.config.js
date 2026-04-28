@@ -35,7 +35,7 @@ export default {
     plugins: [
       'expo-audio',
       '@siteed/audio-studio',
-      ['expo-asset', { assets: ['./assets/ggml-small.en.bin'] }],
+      './plugins/withWhisperModel',
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
