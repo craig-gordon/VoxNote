@@ -87,7 +87,7 @@ export function useSpeechToText(): UseSpeechToTextReturn {
 
     try {
       const result = await recorder.stopRecording()
-      const uri = result.fileUri
+      const uri = result?.fileUri
 
       if (!uri) {
         console.error('No recording URI')
@@ -110,11 +110,28 @@ export function useSpeechToText(): UseSpeechToTextReturn {
         return
       }
 
+      // Normalize URI to file:///<path> form for whisper.rn
+      const normalizedUri = uri.startsWith('file:///')
+        ? uri
+        : uri.startsWith('file://')
+          ? uri
+          : uri.startsWith('file:/')
+            ? uri.replace(/^file:\//, 'file:///')
+            : `file://${uri.startsWith('/') ? uri : '/' + uri}`
+
+      const fileInfo = await FileSystem.getInfoAsync(normalizedUri)
+      console.log('Normalized URI:', normalizedUri, 'exists:', fileInfo.exists, 'size:', fileInfo.exists ? fileInfo.size : 'n/a')
+      if (!fileInfo.exists) {
+        setTranscript('[Recording file missing]')
+        setRecordingState('idle')
+        return
+      }
+
       setRecordingState('transcribing')
       console.log('Transcribing locally with whisper.rn...')
       const startTime = Date.now()
       const ctx = await loadWhisperContext()
-      const { promise } = ctx.transcribe(uri, { language: 'en' })
+      const { promise } = ctx.transcribe(normalizedUri, { language: 'en' })
       const transcribeResult = await promise
 
       console.log('Transcription completed in', ((Date.now() - startTime) / 1000).toFixed(1), 'seconds')
