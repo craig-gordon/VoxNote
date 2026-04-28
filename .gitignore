@@ -32,6 +32,10 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+
+# Whisper model (download separately, ~466MB)
+assets/ggml-small.en.bin
 
 # typescript
 *.tsbuildinfo
