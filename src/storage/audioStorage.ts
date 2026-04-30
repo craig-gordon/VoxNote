@@ -3,14 +3,14 @@ import { getAwsClient, getObjectUrl } from './r2Client'
 
 const KEY_PREFIX = 'users/solo'
 const PLAYBACK_URL_TTL_SECONDS = 3600
+const RETRY_DELAYS_MS = [1000, 3000]
 
 export function buildAudioKey(entryKey: string): string {
   const safe = entryKey.replace(/:/g, '-')
   return `${KEY_PREFIX}/${safe}.wav`
 }
 
-export async function uploadAudio(entryKey: string, localUri: string): Promise<string> {
-  const audioKey = buildAudioKey(entryKey)
+async function uploadAudioOnce(audioKey: string, localUri: string): Promise<void> {
   const url = getObjectUrl(audioKey)
   const aws = getAwsClient()
   const signed = await aws.sign(url, {
@@ -38,7 +38,28 @@ export async function uploadAudio(entryKey: string, localUri: string): Promise<s
   if (result.status < 200 || result.status >= 300) {
     throw new Error(`R2 upload failed (${result.status}): ${result.body}`)
   }
-  return audioKey
+}
+
+export async function uploadAudio(entryKey: string, localUri: string): Promise<string> {
+  const audioKey = buildAudioKey(entryKey)
+  const totalAttempts = RETRY_DELAYS_MS.length + 1
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= totalAttempts; attempt++) {
+    if (attempt > 1) {
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt - 2]))
+      console.log(`R2 upload retry ${attempt}/${totalAttempts} for ${audioKey}`)
+    }
+    try {
+      await uploadAudioOnce(audioKey, localUri)
+      return audioKey
+    } catch (err) {
+      lastError = err
+      console.warn(`R2 upload attempt ${attempt} failed:`, err)
+    }
+  }
+
+  throw lastError
 }
 
 export async function getPlaybackUrl(audioKey: string): Promise<string> {

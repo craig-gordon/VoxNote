@@ -42,21 +42,6 @@ export async function setAudioKey(entryKey: string, audioKey: string): Promise<v
   await sql`UPDATE journal_entries SET audio_key = ${audioKey} WHERE entry_key = ${entryKey}`
 }
 
-interface EntryAudioRow {
-  entry_key: string
-  audio_key: string | null
-}
-
-export async function getAllAudioKeys(): Promise<Map<string, string | null>> {
-  const sql = getNeonClient()
-  const rows = (await sql`SELECT entry_key, audio_key FROM journal_entries`) as EntryAudioRow[]
-  const map = new Map<string, string | null>()
-  for (const row of rows) {
-    map.set(row.entry_key, row.audio_key)
-  }
-  return map
-}
-
 export async function deleteEntry(entryKey: string): Promise<void> {
   const sql = getNeonClient()
   const audioKey = await getAudioKey(entryKey)
