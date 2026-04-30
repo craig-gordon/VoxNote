@@ -45,6 +45,9 @@ export default {
       r2AccessKeyId: process.env.R2_ACCESS_KEY_ID,
       r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
       r2Bucket: process.env.R2_BUCKET,
+      eas: {
+        projectId: '16772473-9ebf-4a95-95c2-eba1d9b28e22'
+      }
     },
     jsEngine: 'hermes',
   },
