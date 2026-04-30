@@ -4,6 +4,8 @@ import { createAudioPlayer, requestRecordingPermissionsAsync, getRecordingPermis
 import type { AudioPlayer } from 'expo-audio'
 import * as FileSystem from 'expo-file-system/legacy'
 import { initWhisper, type WhisperContext } from 'whisper.rn'
+import { uploadAudio } from '../storage/audioStorage'
+import { setAudioKey } from '../db/entryRepository'
 import type { RecordingState, UseSpeechToTextReturn } from './useSpeechToText.types'
 
 const MODEL_FILENAME = 'ggml-small.en.bin'
@@ -154,15 +156,31 @@ export function useSpeechToText(): UseSpeechToTextReturn {
     const uri = lastRecordingUriRef.current
     if (!uri) return
 
+    // Always save to local upload-retry cache first; if upload fails, the launch-time
+    // migration scan will retry it from this directory.
     const audioDir = `${FileSystem.documentDirectory}audio/`
     const dirInfo = await FileSystem.getInfoAsync(audioDir)
     if (!dirInfo.exists) {
       await FileSystem.makeDirectoryAsync(audioDir, { intermediates: true })
     }
-
     const safeFilename = entryKey.replace(/:/g, '-')
-    await FileSystem.copyAsync({ from: uri, to: `${audioDir}${safeFilename}.wav` })
-    console.log('Audio persisted for entry:', entryKey)
+    const localPath = `${audioDir}${safeFilename}.wav`
+    await FileSystem.copyAsync({ from: uri, to: localPath })
+
+    // Fire-and-forget upload so save UX doesn't block on the network.
+    uploadAudio(entryKey, localPath)
+      .then(async (audioKey) => {
+        await setAudioKey(entryKey, audioKey)
+        try {
+          await FileSystem.deleteAsync(localPath, { idempotent: true })
+        } catch (e) {
+          console.warn('Failed to delete local recording after upload:', e)
+        }
+        console.log('Audio uploaded to R2:', audioKey)
+      })
+      .catch((err) => {
+        console.error('R2 upload failed; will retry on next launch:', err)
+      })
   }, [])
 
   const playRecording = useCallback(() => {

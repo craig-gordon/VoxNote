@@ -35,11 +35,16 @@ export default {
     plugins: [
       'expo-audio',
       '@siteed/audio-studio',
+      'react-native-quick-crypto',
       './plugins/withWhisperModel',
     ],
     extra: {
       openaiApiKey: process.env.OPENAI_API_KEY,
       neonDatabaseUrl: process.env.NEON_DATABASE_CONNECTION_STRING,
+      r2AccountId: process.env.R2_ACCOUNT_ID,
+      r2AccessKeyId: process.env.R2_ACCESS_KEY_ID,
+      r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+      r2Bucket: process.env.R2_BUCKET,
     },
     jsEngine: 'hermes',
   },

@@ -4,6 +4,7 @@ import { useSpeechToText } from '../hooks/useSpeechToText'
 import { useEntryStorage, type UseEntryStorageReturn } from '../hooks/useEntryStorage'
 import { useCalendarEntries } from '../hooks/useCalendarEntries'
 import { useInsights, type UseInsightsReturn } from '../hooks/useInsights'
+import { migrateLocalAudio } from '../storage/audioMigration'
 import type { FeedbackType } from '../db/insightsRepository'
 
 const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiApiKey as string | undefined
@@ -74,6 +75,9 @@ export function JournalProvider({ children }: JournalProviderProps) {
 
   useEffect(() => {
     insightsHook.loadLatestInsight()
+    migrateLocalAudio().catch((err) => {
+      console.error('Audio migration scan failed:', err)
+    })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshEntries = useCallback(async () => {
